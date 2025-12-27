@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"go.carr.sh/litmus/internal/buildinfo"
 )
 
 var rootCmd = &cobra.Command{
@@ -33,6 +34,15 @@ func Execute() {
 	}
 }
 
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print version information",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("litmus", buildinfo.String())
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(versionCmd)
 }
