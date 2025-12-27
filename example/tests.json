@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Extract person info",
+        "input": "John Smith is 30 years old and works at Acme Corp",
+        "expected": {
+            "name": "John Smith",
+            "age": 30,
+            "company": "Acme Corp"
+        }
+    },
+    {
+        "name": "Extract another person",
+        "input": "Jane Doe, age 25, is employed by TechStart Inc",
+        "expected": {
+            "name": "Jane Doe",
+            "age": 25,
+            "company": "TechStart Inc"
+        }
+    }
+]
