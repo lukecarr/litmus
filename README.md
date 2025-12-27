@@ -2,7 +2,7 @@
 
 Specification testing for structured LLM outputs.
 
-Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter, and compare accuracy, latency, throughput, and cost across models.
+Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter, and compare accuracy, latency, and throughput across models.
 
 ## Example output
 
