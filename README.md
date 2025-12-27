@@ -130,7 +130,7 @@ Extract the person's name, age, and company from the given text.
 5. Run tests:
 
 ```bash
-litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --model openai/gpt-4o
+litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --model openai/gpt-4.1-nano
 ```
 
 ## Usage
@@ -163,7 +163,7 @@ litmus run \
   --tests tests.json \
   --schema schema.json \
   --prompt-file prompt.txt \
-  --model openai/gpt-4o
+  --model openai/gpt-4.1-nano
 ```
 
 **Multiple models for comparison:**
@@ -173,9 +173,8 @@ litmus run \
   --tests tests.json \
   --schema schema.json \
   --prompt "Extract entities from the text" \
-  --model openai/gpt-4o \
-  --model anthropic/claude-3.5-sonnet \
-  --model google/gemini-pro
+  --model openai/gpt-4.1-nano \
+  --model mistralai/mistral-nemo
 ```
 
 **Parallel execution:**
@@ -185,7 +184,7 @@ litmus run \
   --tests tests.json \
   --schema schema.json \
   --prompt-file prompt.txt \
-  --model openai/gpt-4o \
+  --model openai/gpt-4.1-nano \
   --parallel 5
 ```
 
@@ -196,7 +195,7 @@ litmus run \
   --tests tests.json \
   --schema schema.json \
   --prompt-file prompt.txt \
-  --model openai/gpt-4o \
+  --model openai/gpt-4.1-nano \
   --json > results.json
 ```
 
@@ -223,7 +222,7 @@ The test file is a JSON array of test cases:
 
 ## JSON Schema
 
-The schema file should be a valid JSON Schema (draft-07 or later). It is passed to OpenRouter's `response_format` parameter to enforce structured output from the LLM.
+The schema file should be a valid [JSON Schema](https://json-schema.org/). It is passed to OpenRouter's `response_format` parameter to enforce structured output from the LLM.
 
 Example schema:
 
@@ -266,13 +265,13 @@ Use `--json` to get machine-readable output:
 
 ```json
 {
-  "timestamp": "2024-01-15T10:30:00Z",
+  "timestamp": "2025-12-27T16:19:30Z",
   "prompt": "Extract entities...",
   "schema_file": "schema.json",
   "test_file": "tests.json",
   "models": [
     {
-      "model": "openai/gpt-4o",
+      "model": "openai/gpt-4.1-nano",
       "results": [...],
       "metrics": {
         "total_tests": 10,
