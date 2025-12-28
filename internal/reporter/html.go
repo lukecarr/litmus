@@ -34,7 +34,10 @@ type templateData struct {
 func (h *HTML) Report(report *types.RunReport) error {
 	tmpl, err := template.New("report").Funcs(template.FuncMap{
 		"json": func(v any) string {
-			b, _ := json.MarshalIndent(v, "", "  ")
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("error marshaling JSON: %v", err)
+			}
 			return string(b)
 		},
 		"formatDuration": formatDurationHTML,
