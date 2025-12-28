@@ -49,6 +49,9 @@ func (h *HTML) Report(report *types.RunReport) error {
 			}
 			return "error"
 		},
+		"add": func(a, b int) int {
+			return a + b
+		},
 	}).Parse(htmlTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to parse HTML template: %w", err)
