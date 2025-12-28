@@ -447,7 +447,7 @@
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Total Tokens</div>
-                    <div class="metric-value">{{.Metrics.TotalTokensIn}}</div>
+                    <div class="metric-value">{{add .Metrics.TotalTokensIn .Metrics.TotalTokensOut}}</div>
                     <div class="metric-detail">in: {{.Metrics.TotalTokensIn}} · out: {{.Metrics.TotalTokensOut}}</div>
                 </div>
                 <div class="metric-card">
