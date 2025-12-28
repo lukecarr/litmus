@@ -144,6 +144,19 @@
         .metric-value.error { color: var(--error); }
         .metric-value.warning { color: var(--warning); }
 
+        .text-success { color: var(--success); }
+        .text-error { color: var(--error); }
+        .text-warning { color: var(--warning); }
+        .text-muted { color: var(--text-muted); }
+
+        .comparison-table .model-name {
+            font-size: 0.8125rem;
+        }
+
+        .comparison-table .metric-value {
+            font-size: 0.875rem;
+        }
+
         .metric-detail {
             font-size: 0.75rem;
             color: var(--text-secondary);
@@ -427,11 +440,11 @@
                 <div class="metric-card">
                     <div class="metric-label">Results</div>
                     <div class="metric-value">
-                        <span style="color: var(--success)">{{.Metrics.Passed}}</span>
-                        <span style="color: var(--text-muted)">/</span>
-                        <span style="color: var(--error)">{{.Metrics.Failed}}</span>
-                        {{if gt .Metrics.Errors 0}}<span style="color: var(--text-muted)">/</span>
-                        <span style="color: var(--warning)">{{.Metrics.Errors}}</span>{{end}}
+                        <span class="text-success">{{.Metrics.Passed}}</span>
+                        <span class="text-muted">/</span>
+                        <span class="text-error">{{.Metrics.Failed}}</span>
+                        {{if gt .Metrics.Errors 0}}<span class="text-muted">/</span>
+                        <span class="text-warning">{{.Metrics.Errors}}</span>{{end}}
                     </div>
                     <div class="metric-detail">pass / fail{{if gt .Metrics.Errors 0}} / error{{end}}</div>
                 </div>
@@ -544,9 +557,9 @@
                 <tbody>
                     {{range .Report.Models}}
                     <tr>
-                        <td class="model-name" style="font-size: 0.8125rem;">{{.Model}}</td>
+                        <td class="model-name">{{.Model}}</td>
                         <td>{{range .Results}}{{if .Provider}}{{.Provider}}{{break}}{{end}}{{end}}</td>
-                        <td><span class="metric-value {{accuracyClass .Metrics.Accuracy}}" style="font-size: 0.875rem;">{{printf "%.1f" .Metrics.Accuracy}}%</span></td>
+                        <td><span class="metric-value {{accuracyClass .Metrics.Accuracy}}">{{printf "%.1f" .Metrics.Accuracy}}%</span></td>
                         <td class="latency">{{formatDuration .Metrics.LatencyP50}}</td>
                         <td class="latency">{{printf "%.1f" .Metrics.Throughput}} tok/s</td>
                         <td class="tokens">{{.Metrics.TotalTokensIn}} / {{.Metrics.TotalTokensOut}}</td>
