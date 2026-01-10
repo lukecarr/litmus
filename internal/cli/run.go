@@ -25,6 +25,7 @@ var (
 	models       []string
 	parallel     int
 	outputFormat string
+	jsonOutput   bool // Deprecated: use --output=json instead
 	apiKey       string
 )
 
@@ -63,6 +64,8 @@ func init() {
 	runCmd.Flags().StringArrayVarP(&models, "model", "m", nil, "Model(s) to test against (required, can be repeated)")
 	runCmd.Flags().IntVarP(&parallel, "parallel", "P", 1, "Number of parallel requests per model")
 	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, json, html")
+	runCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON (deprecated: use --output=json)")
+	runCmd.Flags().MarkDeprecated("json", "use --output=json instead")
 	runCmd.Flags().StringVar(&apiKey, "api-key", "", "OpenRouter API key (or use OPENROUTER_API_KEY env var)")
 
 	runCmd.MarkFlagRequired("tests")
@@ -71,6 +74,11 @@ func init() {
 }
 
 func runTests(cmd *cobra.Command, args []string) error {
+	// Handle deprecated --json flag
+	if jsonOutput {
+		outputFormat = "json"
+	}
+
 	// Get API key
 	key := apiKey
 	if key == "" {

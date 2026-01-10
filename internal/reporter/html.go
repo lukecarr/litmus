@@ -16,6 +16,7 @@ var htmlTemplate string
 
 // HTML outputs results as a self-contained HTML file.
 type HTML struct {
+	// w is the writer to output the report to.
 	w io.Writer
 }
 
@@ -26,7 +27,9 @@ func NewHTML(w io.Writer) *HTML {
 
 // templateData holds all data passed to the HTML template.
 type templateData struct {
-	Report      *types.RunReport
+	Report *types.RunReport
+	// GeneratedAt is the time the report was generated, which may differ from
+	// Report.Timestamp (when the tests were run) if reports are generated later.
 	GeneratedAt string
 }
 
@@ -40,7 +43,7 @@ func (h *HTML) Report(report *types.RunReport) error {
 			}
 			return string(b)
 		},
-		"formatDuration": formatDurationHTML,
+		"formatDuration": formatDuration,
 		"accuracyClass": func(acc float64) string {
 			if acc >= 90 {
 				return "success"
@@ -67,14 +70,4 @@ func (h *HTML) Report(report *types.RunReport) error {
 	}
 
 	return nil
-}
-
-func formatDurationHTML(d time.Duration) string {
-	if d < time.Millisecond {
-		return fmt.Sprintf("%dµs", d.Microseconds())
-	}
-	if d < time.Second {
-		return fmt.Sprintf("%dms", d.Milliseconds())
-	}
-	return fmt.Sprintf("%.2fs", d.Seconds())
 }
