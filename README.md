@@ -318,6 +318,8 @@ litmus run \
 
 The HTML report includes all the same information as the terminal output, formatted for viewing in a browser. It's self-contained with no external dependencies, making it easy to share or archive.
 
+![HTML Report Screenshot](https://github.com/user-attachments/assets/0f2ba956-de27-42fa-9e06-42bda13412b0)
+
 ## Exit Codes
 
 - `0`: All tests passed
