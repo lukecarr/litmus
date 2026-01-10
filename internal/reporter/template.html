@@ -244,7 +244,7 @@
             color: var(--warning);
         }
 
-        .latency, .tokens {
+        .latency, .tokens, .throughput {
             font-family: var(--font-mono);
             font-size: 0.8125rem;
             color: var(--text-secondary);
@@ -482,7 +482,7 @@
                 <tbody>
                     {{range .Results}}
                     {{if .Error}}
-                    <tr class="expandable error-row" onclick="toggleRow(this)">
+                    <tr class="expandable error-row" tabindex="0" role="button" aria-expanded="false" onclick="toggleRow(this)" onkeydown="handleRowKeydown(event, this)">
                         <td class="test-name"><span class="toggle">▶</span>{{.TestName}}</td>
                         <td><span class="status-badge error">⚠ ERROR</span></td>
                         <td class="latency">{{formatDuration .Latency}}</td>
@@ -503,7 +503,7 @@
                         <td class="tokens">{{.TokensIn}}/{{.TokensOut}}</td>
                     </tr>
                     {{else}}
-                    <tr class="expandable" onclick="toggleRow(this)">
+                    <tr class="expandable" tabindex="0" role="button" aria-expanded="false" onclick="toggleRow(this)" onkeydown="handleRowKeydown(event, this)">
                         <td class="test-name"><span class="toggle">▶</span>{{.TestName}}</td>
                         <td><span class="status-badge fail">✗ FAIL</span></td>
                         <td class="latency">{{formatDuration .Latency}}</td>
@@ -561,7 +561,7 @@
                         <td>{{range .Results}}{{if .Provider}}{{.Provider}}{{break}}{{end}}{{end}}</td>
                         <td><span class="metric-value {{accuracyClass .Metrics.Accuracy}}">{{printf "%.1f" .Metrics.Accuracy}}%</span></td>
                         <td class="latency">{{formatDuration .Metrics.LatencyP50}}</td>
-                        <td class="latency">{{printf "%.1f" .Metrics.Throughput}} tok/s</td>
+                        <td class="throughput">{{printf "%.1f" .Metrics.Throughput}} tok/s</td>
                         <td class="tokens">{{.Metrics.TotalTokensIn}} / {{.Metrics.TotalTokensOut}}</td>
                     </tr>
                     {{end}}
@@ -578,9 +578,18 @@
     <script>
         function toggleRow(row) {
             row.classList.toggle('expanded');
+            const isExpanded = row.classList.contains('expanded');
+            row.setAttribute('aria-expanded', isExpanded);
             const detailsRow = row.nextElementSibling;
             if (detailsRow && detailsRow.classList.contains('details-row')) {
                 detailsRow.classList.toggle('visible');
+            }
+        }
+
+        function handleRowKeydown(event, row) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleRow(row);
             }
         }
 
