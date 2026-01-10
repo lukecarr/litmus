@@ -151,7 +151,7 @@ litmus run --tests <test-file> --schema <schema-file> --prompt <prompt> --model 
 | `--prompt-file` | | Path to file containing system prompt |
 | `--model` | `-m` | Model to test against (required, can be repeated) |
 | `--parallel` | `-P` | Number of parallel requests per model (default: 1) |
-| `--json` | | Output results as JSON |
+| `--output` | `-o` | Output format: `terminal`, `json`, or `html` (default: `terminal`) |
 | `--api-key` | | OpenRouter API key (or use OPENROUTER_API_KEY env var) |
 
 ### Examples
@@ -196,7 +196,18 @@ litmus run \
   --schema schema.json \
   --prompt-file prompt.txt \
   --model openai/gpt-4.1-nano \
-  --json > results.json
+  --output json > results.json
+```
+
+**HTML report:**
+
+```bash
+litmus run \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model openai/gpt-4.1-nano \
+  --output html > report.html
 ```
 
 ## Test File Format
@@ -247,6 +258,12 @@ Example schema:
 
 ## Output
 
+Litmus supports three output formats via the `--output` flag:
+
+- `terminal` (default): Colored, formatted output for the terminal
+- `json`: Machine-readable JSON for CI/CD pipelines
+- `html`: Self-contained HTML report for sharing and archiving
+
 ### Terminal Output
 
 The terminal output includes:
@@ -261,7 +278,7 @@ The terminal output includes:
 
 ### JSON Output
 
-Use `--json` to get machine-readable output:
+Use `--output json` to get machine-readable output:
 
 ```json
 {
@@ -285,6 +302,21 @@ Use `--json` to get machine-readable output:
   ]
 }
 ```
+
+### HTML Output
+
+Use `--output html` to generate a self-contained HTML report:
+
+```bash
+litmus run \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model openai/gpt-4.1-nano \
+  --output html > report.html
+```
+
+The HTML report includes all the same information as the terminal output, formatted for viewing in a browser. It's self-contained with no external dependencies, making it easy to share or archive.
 
 ## Exit Codes
 
