@@ -28,6 +28,7 @@ func init() {
 			for _, setting := range info.Settings {
 				if setting.Key == "vcs.revision" && Commit == "unknown" {
 					Commit = setting.Value
+					break
 				}
 			}
 		}
