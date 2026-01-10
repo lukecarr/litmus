@@ -18,14 +18,15 @@ import (
 )
 
 var (
-	testsFile  string
-	schemaFile string
-	prompt     string
-	promptFile string
-	models     []string
-	parallel   int
-	jsonOutput bool
-	apiKey     string
+	testsFile    string
+	schemaFile   string
+	prompt       string
+	promptFile   string
+	models       []string
+	parallel     int
+	outputFormat string
+	jsonOutput   bool // Deprecated: use --output=json instead
+	apiKey       string
 )
 
 var runCmd = &cobra.Command{
@@ -43,7 +44,11 @@ Examples:
 
   # JSON output for CI/CD
   litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt \
-    --model openai/gpt-4o --json
+    --model openai/gpt-4o --output=json
+
+  # HTML report
+  litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt \
+    --model openai/gpt-4o --output=html > report.html
 
   # Parallel execution
   litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt \
@@ -58,7 +63,9 @@ func init() {
 	runCmd.Flags().StringVar(&promptFile, "prompt-file", "", "Path to file containing system prompt")
 	runCmd.Flags().StringArrayVarP(&models, "model", "m", nil, "Model(s) to test against (required, can be repeated)")
 	runCmd.Flags().IntVarP(&parallel, "parallel", "P", 1, "Number of parallel requests per model")
-	runCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON")
+	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, json, html")
+	runCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON (deprecated: use --output=json)")
+	runCmd.Flags().MarkDeprecated("json", "use --output=json instead")
 	runCmd.Flags().StringVar(&apiKey, "api-key", "", "OpenRouter API key (or use OPENROUTER_API_KEY env var)")
 
 	runCmd.MarkFlagRequired("tests")
@@ -67,6 +74,11 @@ func init() {
 }
 
 func runTests(cmd *cobra.Command, args []string) error {
+	// Handle deprecated --json flag
+	if jsonOutput {
+		outputFormat = "json"
+	}
+
 	// Get API key
 	key := apiKey
 	if key == "" {
@@ -141,7 +153,7 @@ func runTests(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		if !jsonOutput {
+		if outputFormat == "terminal" {
 			fmt.Fprintf(os.Stderr, "Running %d tests against %s...\n", len(tests), model)
 		}
 
@@ -155,13 +167,19 @@ func runTests(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if jsonOutput {
-		jsonReporter := reporter.NewJSON(os.Stdout)
-		return jsonReporter.Report(report)
+	var rep reporter.Reporter
+	switch outputFormat {
+	case "json":
+		rep = reporter.NewJSON(os.Stdout)
+	case "html":
+		rep = reporter.NewHTML(os.Stdout)
+	case "terminal":
+		rep = reporter.NewTerminal(os.Stdout)
+	default:
+		return fmt.Errorf("unknown output format: %s (valid: terminal, json, html)", outputFormat)
 	}
 
-	termReporter := reporter.NewTerminal(os.Stdout)
-	if err := termReporter.Report(report); err != nil {
+	if err := rep.Report(report); err != nil {
 		return err
 	}
 
