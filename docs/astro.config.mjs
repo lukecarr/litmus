@@ -4,6 +4,8 @@ import starlight from "@astrojs/starlight";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://lukecarr.github.io",
+  base: "/litmus",
   integrations: [
     starlight({
       title: "Litmus",
