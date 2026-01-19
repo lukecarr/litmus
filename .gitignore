@@ -29,3 +29,8 @@ go.work
 /litmus
 **/*.html
 !/internal/reporter/template.html
+
+# Documentation site
+docs/node_modules/
+docs/dist/
+docs/.astro/
