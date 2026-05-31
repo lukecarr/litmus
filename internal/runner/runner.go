@@ -11,25 +11,25 @@ import (
 	"time"
 
 	"go.carr.sh/litmus/internal/compare"
-	"go.carr.sh/litmus/internal/openrouter"
+	"go.carr.sh/litmus/internal/provider"
 	"go.carr.sh/litmus/internal/types"
 )
 
 // Runner executes tests against LLM models.
 type Runner struct {
-	// client is the OpenRouter client.
-	client *openrouter.Client
+	// client is the LLM provider.
+	client provider.Provider
 	// parallel is the number of parallel requests per model.
 	parallel int
 }
 
-// New creates a new Runner.
-func New(apiKey string, parallel int) *Runner {
+// New creates a new Runner backed by the given provider.
+func New(p provider.Provider, parallel int) *Runner {
 	if parallel < 1 {
 		parallel = 1
 	}
 	return &Runner{
-		client:   openrouter.NewClient(apiKey),
+		client:   p,
 		parallel: parallel,
 	}
 }

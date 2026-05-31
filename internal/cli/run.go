@@ -11,6 +11,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"go.carr.sh/litmus/internal/cloudflare"
+	"go.carr.sh/litmus/internal/openrouter"
+	"go.carr.sh/litmus/internal/provider"
 	"go.carr.sh/litmus/internal/reporter"
 	"go.carr.sh/litmus/internal/runner"
 	"go.carr.sh/litmus/internal/types"
@@ -26,17 +29,35 @@ var (
 	parallel     int
 	outputFormat string
 	jsonOutput   bool // Deprecated: use --output=json instead
+	providerName string
 	apiKey       string
+	cfAccountID  string
+	cfGateway    string
+	cfToken      string
 )
 
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run tests against LLM models",
-	Long: `Run specification tests against one or more LLM models via OpenRouter.
+	Long: `Run specification tests against one or more LLM models via OpenRouter or
+Cloudflare AI Gateway.
+
+Providers (--provider):
+  openrouter  (default)  Uses --api-key or OPENROUTER_API_KEY.
+  cloudflare             Uses --cf-account-id and --cf-gateway plus a credential:
+                         --api-key (the downstream provider key) and/or --cf-token
+                         (the gateway token, for authenticated gateways).
+
+Models use the same {provider}/{model} form for both providers, e.g. openai/gpt-4o.
 
 Examples:
-  # Basic usage
+  # Basic usage (OpenRouter)
   litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --model openai/gpt-4o
+
+  # Cloudflare AI Gateway
+  litmus run --provider cloudflare \
+    --cf-account-id $CLOUDFLARE_ACCOUNT_ID --cf-gateway my-gateway --api-key $OPENAI_KEY \
+    --tests tests.json --schema schema.json --prompt-file prompt.txt --model openai/gpt-4o
 
   # Multiple models
   litmus run --tests tests.json --schema schema.json --prompt "Extract entities" \
@@ -66,7 +87,11 @@ func init() {
 	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, json, html")
 	runCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON (deprecated: use --output=json)")
 	runCmd.Flags().MarkDeprecated("json", "use --output=json instead")
-	runCmd.Flags().StringVar(&apiKey, "api-key", "", "OpenRouter API key (or use OPENROUTER_API_KEY env var)")
+	runCmd.Flags().StringVar(&providerName, "provider", "openrouter", "LLM provider: openrouter or cloudflare")
+	runCmd.Flags().StringVar(&apiKey, "api-key", "", "API key (OpenRouter: OPENROUTER_API_KEY; Cloudflare: downstream provider key or CLOUDFLARE_API_KEY)")
+	runCmd.Flags().StringVar(&cfAccountID, "cf-account-id", "", "Cloudflare account ID (or CLOUDFLARE_ACCOUNT_ID env var)")
+	runCmd.Flags().StringVar(&cfGateway, "cf-gateway", "", "Cloudflare AI Gateway ID (or CLOUDFLARE_GATEWAY_ID env var)")
+	runCmd.Flags().StringVar(&cfToken, "cf-token", "", "Cloudflare AI Gateway token for authenticated gateways (or CF_AIG_TOKEN env var)")
 
 	runCmd.MarkFlagRequired("tests")
 	runCmd.MarkFlagRequired("schema")
@@ -79,13 +104,10 @@ func runTests(cmd *cobra.Command, args []string) error {
 		outputFormat = "json"
 	}
 
-	// Get API key
-	key := apiKey
-	if key == "" {
-		key = os.Getenv("OPENROUTER_API_KEY")
-	}
-	if key == "" {
-		return fmt.Errorf("API key required: use --api-key or set OPENROUTER_API_KEY environment variable")
+	// Build the provider from flags and environment.
+	prov, err := buildProvider()
+	if err != nil {
+		return err
 	}
 
 	// Get prompt
@@ -135,7 +157,7 @@ func runTests(cmd *cobra.Command, args []string) error {
 	}()
 
 	// Create runner
-	r := runner.New(key, parallel)
+	r := runner.New(prov, parallel)
 
 	// Prepare report
 	report := &types.RunReport{
@@ -192,4 +214,49 @@ func runTests(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// buildProvider constructs the LLM provider selected by --provider, resolving
+// credentials from flags or environment variables and validating that the
+// required values are present.
+func buildProvider() (provider.Provider, error) {
+	switch strings.ToLower(strings.TrimSpace(providerName)) {
+	case "", "openrouter":
+		key := firstNonEmpty(apiKey, os.Getenv("OPENROUTER_API_KEY"))
+		if key == "" {
+			return nil, fmt.Errorf("API key required: use --api-key or set OPENROUTER_API_KEY environment variable")
+		}
+		return openrouter.New(key), nil
+
+	case "cloudflare":
+		cfg := cloudflare.Config{
+			AccountID:    firstNonEmpty(cfAccountID, os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
+			GatewayID:    firstNonEmpty(cfGateway, os.Getenv("CLOUDFLARE_GATEWAY_ID")),
+			APIKey:       firstNonEmpty(apiKey, os.Getenv("CLOUDFLARE_API_KEY")),
+			GatewayToken: firstNonEmpty(cfToken, os.Getenv("CF_AIG_TOKEN")),
+		}
+		if cfg.AccountID == "" {
+			return nil, fmt.Errorf("cloudflare: --cf-account-id or CLOUDFLARE_ACCOUNT_ID required")
+		}
+		if cfg.GatewayID == "" {
+			return nil, fmt.Errorf("cloudflare: --cf-gateway or CLOUDFLARE_GATEWAY_ID required")
+		}
+		if cfg.APIKey == "" && cfg.GatewayToken == "" {
+			return nil, fmt.Errorf("cloudflare: a credential is required: use --api-key (provider key) and/or --cf-token (gateway token)")
+		}
+		return cloudflare.New(cfg)
+
+	default:
+		return nil, fmt.Errorf("unknown provider %q (valid: openrouter, cloudflare)", providerName)
+	}
+}
+
+// firstNonEmpty returns the first non-empty string from vals, or "" if none.
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

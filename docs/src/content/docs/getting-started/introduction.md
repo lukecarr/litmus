@@ -3,14 +3,14 @@ title: Introduction
 description: Learn about Litmus - specification testing for structured LLM outputs.
 ---
 
-Litmus is a command-line tool for specification testing of structured LLM outputs. It lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter, and compare accuracy, latency, and throughput across models.
+Litmus is a command-line tool for specification testing of structured LLM outputs. It lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter or Cloudflare AI Gateway, and compare accuracy, latency, and throughput across models.
 
 ## What is Litmus?
 
 Litmus helps you:
 
 - **Define test cases** with input strings and expected JSON outputs
-- **Run tests** against LLM models via OpenRouter
+- **Run tests** against LLM models via OpenRouter or Cloudflare AI Gateway
 - **Compare models** by accuracy, latency, and throughput
 - **Generate reports** in terminal, JSON, or HTML format
 

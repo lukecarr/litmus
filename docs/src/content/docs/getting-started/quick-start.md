@@ -8,7 +8,7 @@ This guide will help you run your first Litmus test in just a few minutes.
 ## Prerequisites
 
 - Litmus installed on your system (see [Installation](/getting-started/installation/))
-- An OpenRouter API key
+- An OpenRouter API key, or a Cloudflare AI Gateway (see [Providers](/usage/cli-reference/#providers))
 
 ## Step 1: Set Your API Key
 
@@ -17,6 +17,8 @@ Set your OpenRouter API key as an environment variable:
 ```bash
 export OPENROUTER_API_KEY="your-api-key"
 ```
+
+To use Cloudflare AI Gateway instead, see [Providers](/usage/cli-reference/#providers).
 
 ## Step 2: Create a Test File
 

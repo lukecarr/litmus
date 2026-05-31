@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 
 It allows you to:
   - Define test cases with input strings and expected JSON outputs
-  - Run tests against multiple LLM models via OpenRouter
+  - Run tests against multiple LLM models via OpenRouter or Cloudflare AI Gateway
   - Compare accuracy, latency, throughput, and cost across models
   - Get detailed field-level diff reports for failures`,
 }

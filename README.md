@@ -2,7 +2,7 @@
 
 Specification testing for structured LLM outputs.
 
-Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter, and compare accuracy, latency, and throughput across models.
+Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter or Cloudflare AI Gateway, and compare accuracy, latency, and throughput across models.
 
 ## Example output
 
@@ -141,6 +141,42 @@ litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --mo
 litmus run --tests <test-file> --schema <schema-file> --prompt <prompt> --model <model>
 ```
 
+### Providers
+
+Litmus sends requests through one of two providers, selected with `--provider`.
+
+#### OpenRouter
+
+The default provider. Set your key with `--api-key` or the `OPENROUTER_API_KEY` environment variable:
+
+```bash
+export OPENROUTER_API_KEY="your-api-key"
+
+litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --model openai/gpt-4.1-nano
+```
+
+#### Cloudflare AI Gateway
+
+Pass `--provider cloudflare` and point Litmus at your gateway with `--cf-account-id` and `--cf-gateway`. Models use the same `provider/model` names as OpenRouter.
+
+There are two ways to supply credentials, and you can combine them:
+
+- A downstream provider key via `--api-key` (or `CLOUDFLARE_API_KEY`). Litmus sends it as the `Authorization` header. This is the key for the model's own provider, for example your OpenAI key.
+- A gateway token via `--cf-token` (or `CF_AIG_TOKEN`). Litmus sends it as the `cf-aig-authorization` header. It is required when the gateway has authentication enabled, and it is sufficient on its own when the gateway stores provider keys for you.
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+export CLOUDFLARE_GATEWAY_ID="your-gateway"
+
+litmus run \
+  --provider cloudflare \
+  --api-key "$OPENAI_API_KEY" \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model openai/gpt-4.1-nano
+```
+
 ### Flags
 
 | Flag | Short | Description |
@@ -152,7 +188,11 @@ litmus run --tests <test-file> --schema <schema-file> --prompt <prompt> --model 
 | `--model` | `-m` | Model to test against (required, can be repeated) |
 | `--parallel` | `-P` | Number of parallel requests per model (default: 1) |
 | `--output` | `-o` | Output format: `terminal`, `json`, or `html` (default: `terminal`) |
-| `--api-key` | | OpenRouter API key (or use OPENROUTER_API_KEY env var) |
+| `--provider` | | LLM provider: `openrouter` (default) or `cloudflare` |
+| `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY` |
+| `--cf-account-id` | | Cloudflare account ID (or `CLOUDFLARE_ACCOUNT_ID`), used with `--provider cloudflare` |
+| `--cf-gateway` | | Cloudflare AI Gateway ID (or `CLOUDFLARE_GATEWAY_ID`), used with `--provider cloudflare` |
+| `--cf-token` | | Cloudflare AI Gateway token for authenticated gateways (or `CF_AIG_TOKEN`) |
 
 ### Examples
 
@@ -233,7 +273,7 @@ The test file is a JSON array of test cases:
 
 ## JSON Schema
 
-The schema file should be a valid [JSON Schema](https://json-schema.org/). It is passed to OpenRouter's `response_format` parameter to enforce structured output from the LLM.
+The schema file should be a valid [JSON Schema](https://json-schema.org/). It is passed to the provider's `response_format` parameter to enforce structured output from the LLM.
 
 Example schema:
 
@@ -327,7 +367,7 @@ The HTML report includes all the same information as the terminal output, format
 
 ## Supported Models
 
-Litmus works with any model available on [OpenRouter](https://openrouter.ai/models).
+With OpenRouter, Litmus works with any model in the [OpenRouter catalog](https://openrouter.ai/models). With Cloudflare AI Gateway, it works with any model your gateway routes to, named in the same `provider/model` form. See the [Cloudflare AI Gateway docs](https://developers.cloudflare.com/ai-gateway/) for the providers it supports.
 
 ## License
 
