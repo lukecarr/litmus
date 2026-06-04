@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/lukecarr/litmus/releases/tag/v0.3.2) - 2026-06-04
+
+### Changed
+
+- Documentation site now served from the litmus.carr.sh custom domain (#24)
+
 ## [0.3.1](https://github.com/lukecarr/litmus/releases/tag/v0.3.1) - 2026-06-04
 
 ### Changed
