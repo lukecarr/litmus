@@ -376,7 +376,7 @@ litmus run \
   --output github
 ```
 
-Each failed or errored test becomes an inline annotation on the test file, at the line where the test is defined, and Litmus appends a results table to the run's job summary. `litmus run` exits non-zero when any test fails, so the step fails on a regression. See [Output Formats](https://litmus.carr.sh/output/formats/) for details.
+Each failed or errored test becomes an inline annotation on the test file, at the line where the test is defined, and Litmus appends a results table to the run's job summary. `litmus run` exits non-zero when any test fails, so the step fails on a regression. See [Output Formats](https://lukecarr.github.io/litmus/output/formats/) for details.
 
 ## Exit Codes
 
