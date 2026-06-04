@@ -1,0 +1,92 @@
+name: Litmus
+description: Run Litmus specification tests against LLM models and annotate failures inline.
+author: Luke Carr
+
+branding:
+  icon: check-circle
+  color: purple
+
+inputs:
+  tests:
+    description: Path to the test cases JSON file.
+    required: true
+  schema:
+    description: Path to the JSON schema file.
+    required: true
+  model:
+    description: Model(s) to test against, one per line or comma-separated (e.g. openai/gpt-4o).
+    required: true
+  prompt:
+    description: System prompt for the LLM. Mutually exclusive with prompt-file.
+    required: false
+    default: ""
+  prompt-file:
+    description: Path to a file containing the system prompt.
+    required: false
+    default: ""
+  parallel:
+    description: Number of parallel requests per model.
+    required: false
+    default: "1"
+  output:
+    description: "Output format: terminal, json, html, or github."
+    required: false
+    default: github
+  provider:
+    description: "LLM provider: openrouter or cloudflare."
+    required: false
+    default: openrouter
+  api-key:
+    description: >-
+      Provider API key. For openrouter this is the OpenRouter key; for cloudflare
+      it is the downstream provider key. Passed to litmus through the environment,
+      never on the command line. Leave empty to use a key already set in the job's
+      environment.
+    required: false
+    default: ""
+  cf-account-id:
+    description: Cloudflare account ID (used with provider=cloudflare).
+    required: false
+    default: ""
+  cf-gateway:
+    description: Cloudflare AI Gateway ID (used with provider=cloudflare).
+    required: false
+    default: ""
+  cf-token:
+    description: Cloudflare AI Gateway token for authenticated gateways.
+    required: false
+    default: ""
+  version:
+    description: Litmus release to download (e.g. v0.3.0). Defaults to the latest release.
+    required: false
+    default: latest
+  working-directory:
+    description: Directory to run litmus from.
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - name: Run Litmus
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        # gh authenticates release downloads with the job token.
+        GH_TOKEN: ${{ github.token }}
+        LITMUS_VERSION: ${{ inputs.version }}
+        # Inputs are passed through the environment, never interpolated into the
+        # script, so a value cannot inject shell. The script maps them to flags.
+        INPUT_TESTS: ${{ inputs.tests }}
+        INPUT_SCHEMA: ${{ inputs.schema }}
+        INPUT_MODEL: ${{ inputs.model }}
+        INPUT_PROMPT: ${{ inputs.prompt }}
+        INPUT_PROMPT_FILE: ${{ inputs.prompt-file }}
+        INPUT_PARALLEL: ${{ inputs.parallel }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_PROVIDER: ${{ inputs.provider }}
+        INPUT_API_KEY: ${{ inputs.api-key }}
+        INPUT_CF_ACCOUNT_ID: ${{ inputs.cf-account-id }}
+        INPUT_CF_GATEWAY: ${{ inputs.cf-gateway }}
+        INPUT_CF_TOKEN: ${{ inputs.cf-token }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/run-litmus.sh"

@@ -1,3 +1,9 @@
 builds:
   - ldflags:
       - -s -w -X go.carr.sh/litmus/internal/buildinfo.Version={{.Version}} -X go.carr.sh/litmus/internal/buildinfo.Commit={{.Commit}}
+
+archives:
+  # Pin the asset name so the GitHub Action can find the right archive without
+  # depending on GoReleaser's default template. Every platform ships a tar.gz.
+  - id: default
+    name_template: "litmus_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
