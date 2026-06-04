@@ -21,15 +21,15 @@ export default defineConfig({
       sidebar: [
         {
           label: "Getting Started",
-          autogenerate: { directory: "getting-started" },
+          items: [{ autogenerate: { directory: "getting-started" } }],
         },
         {
           label: "Usage",
-          autogenerate: { directory: "usage" },
+          items: [{ autogenerate: { directory: "usage" } }],
         },
         {
           label: "Output",
-          autogenerate: { directory: "output" },
+          items: [{ autogenerate: { directory: "output" } }],
         },
       ],
     }),
