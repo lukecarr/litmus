@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/lukecarr/litmus/releases/tag/v0.3.1) - 2026-06-04
+
+### Changed
+
+- GitHub Action display name is now "Litmus Test" (the Marketplace name "Litmus" was already taken)
+
+### Fixed
+
+- Documentation site now builds against Starlight 0.39 (#22)
+
 ## [0.3.0](https://github.com/lukecarr/litmus/releases/tag/v0.3.0) - 2026-06-04
 
 ### Added
