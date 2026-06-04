@@ -123,6 +123,10 @@ For each failed or errored test, Litmus prints a [workflow command](https://docs
 
 Special characters in the message are URL-encoded, so newlines appear as `%0A`. GitHub decodes them when it renders the annotation.
 
+The `file=` value is the path you passed to `--tests`. GitHub only attaches the inline annotation to the diff when that path is relative to the repository root, so run Litmus from the repo root and pass a repo-relative path. An absolute or subdirectory-relative path still appears in the log but will not show up on the changed files.
+
+GitHub also limits how many annotations it surfaces per step (10 of each level), so a run with many failures will not show every annotation inline. The job summary below lists every model's totals, so use it to see the full picture.
+
 When `$GITHUB_STEP_SUMMARY` is set, which is the case inside any job, Litmus also appends a Markdown table to the run's summary:
 
 | Model | Passed | Failed | Errors | Accuracy |

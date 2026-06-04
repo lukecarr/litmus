@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"go.carr.sh/litmus/internal/types"
@@ -73,6 +74,13 @@ func (g *GitHub) annotate(file string, line int, model, message string) {
 func writeJobSummary(report *types.RunReport) error {
 	path := os.Getenv("GITHUB_STEP_SUMMARY")
 	if path == "" {
+		return nil
+	}
+
+	// GITHUB_STEP_SUMMARY is set by the Actions runner. Clean the path and refuse
+	// any parent-directory traversal before opening the file.
+	path = filepath.Clean(path)
+	if strings.Contains(path, "..") {
 		return nil
 	}
 

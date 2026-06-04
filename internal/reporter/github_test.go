@@ -147,3 +147,15 @@ func TestGitHubReporterJobSummary(t *testing.T) {
 		t.Errorf("missing summary row:\n%s", summary)
 	}
 }
+
+func TestGitHubReporterJobSummaryIgnoresTraversalPath(t *testing.T) {
+	// A GITHUB_STEP_SUMMARY containing parent-directory traversal is rejected, so
+	// Report neither errors nor writes outside the runner's summary file.
+	t.Setenv("GITHUB_STEP_SUMMARY", "../../litmus-should-not-write.md")
+	if err := NewGitHub(&bytes.Buffer{}).Report(sampleReport()); err != nil {
+		t.Fatalf("Report returned error: %v", err)
+	}
+	if _, err := os.Stat("../../litmus-should-not-write.md"); err == nil {
+		t.Fatal("Report wrote to a traversal path; the guard did not hold")
+	}
+}

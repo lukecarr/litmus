@@ -98,3 +98,57 @@ func TestRunPropagatesSourceLine(t *testing.T) {
 		t.Errorf("Results[1].SourceLine = %d, want 7", run.Results[1].SourceLine)
 	}
 }
+
+func TestLoadTestFileRejectsTrailingData(t *testing.T) {
+	cases := map[string]string{
+		"trailing garbage":   `[{"name":"a","input":"i","expected":{}}] nonsense`,
+		"concatenated value": `[{"name":"a","input":"i","expected":{}}]{"x":1}`,
+		"truncated array":    `[{"name":"a","input":"i","expected":{}}`,
+	}
+	for name, content := range cases {
+		t.Run(name, func(t *testing.T) {
+			if _, err := LoadTestFile(writeTempFile(t, content)); err == nil {
+				t.Errorf("expected an error for %s, got nil", name)
+			}
+		})
+	}
+}
+
+func TestLoadTestFileAcceptsTrailingWhitespace(t *testing.T) {
+	content := "[{\"name\":\"a\",\"input\":\"i\",\"expected\":{}}]\n  \n"
+	tests, err := LoadTestFile(writeTempFile(t, content))
+	if err != nil {
+		t.Fatalf("LoadTestFile returned error: %v", err)
+	}
+	if len(tests) != 1 {
+		t.Fatalf("loaded %d tests, want 1", len(tests))
+	}
+}
+
+func TestLoadTestFileTracksSourceLineThreeElements(t *testing.T) {
+	// Guards the running line counter across more than two elements, including a
+	// blank line and a multi-line object.
+	content := `[
+    { "name": "a", "input": "x", "expected": {} },
+
+    {
+        "name": "b",
+        "input": "y",
+        "expected": {}
+    },
+    { "name": "c", "input": "z", "expected": {} }
+]`
+	tests, err := LoadTestFile(writeTempFile(t, content))
+	if err != nil {
+		t.Fatalf("LoadTestFile returned error: %v", err)
+	}
+	wantLines := []int{2, 4, 9}
+	if len(tests) != len(wantLines) {
+		t.Fatalf("loaded %d tests, want %d", len(tests), len(wantLines))
+	}
+	for i, want := range wantLines {
+		if tests[i].SourceLine != want {
+			t.Errorf("tests[%d].SourceLine = %d, want %d", i, tests[i].SourceLine, want)
+		}
+	}
+}

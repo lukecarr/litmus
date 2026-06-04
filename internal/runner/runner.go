@@ -46,38 +46,48 @@ func LoadTestFile(path string) ([]types.TestCase, error) {
 
 	dec := json.NewDecoder(bytes.NewReader(data))
 	tok, err := dec.Token()
-	if d, ok := tok.(json.Delim); err != nil || !ok || d != '[' {
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse test file: %w", err)
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '[' {
 		return nil, fmt.Errorf("failed to parse test file: expected a JSON array of test cases")
 	}
 
 	var tests []types.TestCase
+	line, counted := 1, 0 // running 1-based line, and bytes already scanned for newlines
 	for dec.More() {
-		start := dec.InputOffset()
+		start := int(dec.InputOffset())
 		var tc types.TestCase
 		if err := dec.Decode(&tc); err != nil {
 			return nil, fmt.Errorf("failed to parse test file: %w", err)
 		}
-		tc.SourceLine = lineAt(data, start)
+
+		// Find this element's opening brace, counting newlines as we advance.
+		// Braces are reached in order, so counted only moves forward: O(n) overall.
+		brace := start
+		for brace < len(data) && data[brace] != '{' {
+			brace++
+		}
+		for ; counted < brace; counted++ {
+			if data[counted] == '\n' {
+				line++
+			}
+		}
+
+		tc.SourceLine = line
 		tests = append(tests, tc)
 	}
 
-	return tests, nil
-}
+	// Reject anything after the array (a truncated or concatenated file), which
+	// the previous json.Unmarshal rejected. dec.Token consumes the closing ']'.
+	if _, err := dec.Token(); err != nil {
+		return nil, fmt.Errorf("failed to parse test file: %w", err)
+	}
+	if dec.More() {
+		return nil, fmt.Errorf("failed to parse test file: unexpected data after the test array")
+	}
 
-// lineAt returns the 1-based line of the object beginning at or after the byte
-// offset start, skipping the whitespace and commas between array elements.
-func lineAt(data []byte, start int64) int {
-	i := int(start)
-	for i < len(data) && data[i] != '{' {
-		i++
-	}
-	line := 1
-	for j := 0; j < i && j < len(data); j++ {
-		if data[j] == '\n' {
-			line++
-		}
-	}
-	return line
+	return tests, nil
 }
 
 // LoadSchema loads a JSON schema from a file.
