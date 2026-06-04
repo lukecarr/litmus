@@ -3,11 +3,12 @@ title: Output Formats
 description: Understanding the different output formats supported by Litmus.
 ---
 
-Litmus supports three output formats via the `--output` flag:
+Litmus supports four output formats via the `--output` flag:
 
 - `terminal` (default): Colored, formatted output for the terminal
 - `json`: Machine-readable JSON for CI/CD pipelines
 - `html`: Self-contained HTML report for sharing and archiving
+- `github`: GitHub Actions workflow commands with inline annotations and a job summary
 
 ## Terminal Output
 
@@ -101,12 +102,46 @@ The HTML report includes all the same information as the terminal output, format
 - Color-coded pass/fail indicators
 - Interactive model comparison
 
+## GitHub Actions Output
+
+Use `--output github` when you run Litmus inside a GitHub Actions workflow:
+
+```bash
+litmus run \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model openai/gpt-4.1-nano \
+  --output github
+```
+
+For each failed or errored test, Litmus prints a [workflow command](https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions) that GitHub turns into an inline annotation on the test file, at the line where the test is defined:
+
+```plain
+::error file=tests.json,line=11,title=litmus%3A openai/gpt-4.1-nano::Test "Extract another person" failed:%0Aage: expected 25, got 24
+```
+
+Special characters in the message are URL-encoded, so newlines appear as `%0A`. GitHub decodes them when it renders the annotation.
+
+The `file=` value is the path you passed to `--tests`. GitHub only attaches the inline annotation to the diff when that path is relative to the repository root, so run Litmus from the repo root and pass a repo-relative path. An absolute or subdirectory-relative path still appears in the log but will not show up on the changed files.
+
+GitHub also limits how many annotations it surfaces per step (10 of each level), so a run with many failures will not show every annotation inline. The job summary below lists every model's totals, so use it to see the full picture.
+
+When `$GITHUB_STEP_SUMMARY` is set, which is the case inside any job, Litmus also appends a Markdown table to the run's summary:
+
+| Model | Passed | Failed | Errors | Accuracy |
+|-------|--------|--------|--------|----------|
+| openai/gpt-4.1-nano | 9 | 1 | 0 | 90.0% |
+
+`litmus run` exits non-zero when any test fails or errors, so the workflow step fails when a model regresses.
+
 ## Choosing the Right Format
 
 | Use Case | Recommended Format |
 |----------|-------------------|
 | Local development | `terminal` |
-| CI/CD pipelines | `json` |
+| GitHub Actions | `github` |
+| Other CI/CD pipelines | `json` |
 | Sharing with stakeholders | `html` |
 | Archiving results | `html` or `json` |
 | Automated processing | `json` |

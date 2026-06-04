@@ -2,6 +2,7 @@
 package runner
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -34,16 +35,56 @@ func New(p provider.Provider, parallel int) *Runner {
 	}
 }
 
-// LoadTestFile loads test cases from a JSON file.
+// LoadTestFile loads test cases from a JSON file. It decodes the array element
+// by element so each case can record the source line it begins on, which the
+// reporters use to point failures back at the test file.
 func LoadTestFile(path string) ([]types.TestCase, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read test file: %w", err)
 	}
 
-	var tests []types.TestCase
-	if err := json.Unmarshal(data, &tests); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.Token()
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse test file: %w", err)
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '[' {
+		return nil, fmt.Errorf("failed to parse test file: expected a JSON array of test cases")
+	}
+
+	var tests []types.TestCase
+	line, counted := 1, 0 // running 1-based line, and bytes already scanned for newlines
+	for dec.More() {
+		start := int(dec.InputOffset())
+		var tc types.TestCase
+		if err := dec.Decode(&tc); err != nil {
+			return nil, fmt.Errorf("failed to parse test file: %w", err)
+		}
+
+		// Find this element's opening brace, counting newlines as we advance.
+		// Braces are reached in order, so counted only moves forward: O(n) overall.
+		brace := start
+		for brace < len(data) && data[brace] != '{' {
+			brace++
+		}
+		for ; counted < brace; counted++ {
+			if data[counted] == '\n' {
+				line++
+			}
+		}
+
+		tc.SourceLine = line
+		tests = append(tests, tc)
+	}
+
+	// Reject anything after the array (a truncated or concatenated file), which
+	// the previous json.Unmarshal rejected. dec.Token consumes the closing ']'.
+	if _, err := dec.Token(); err != nil {
+		return nil, fmt.Errorf("failed to parse test file: %w", err)
+	}
+	if dec.More() {
+		return nil, fmt.Errorf("failed to parse test file: unexpected data after the test array")
 	}
 
 	return tests, nil
@@ -101,8 +142,9 @@ func (r *Runner) Run(ctx context.Context, model, prompt string, schema json.RawM
 // runSingleTest executes a single test case.
 func (r *Runner) runSingleTest(ctx context.Context, model, prompt string, schema json.RawMessage, test types.TestCase) types.TestResult {
 	result := types.TestResult{
-		TestName: test.Name,
-		Expected: test.Expected,
+		TestName:   test.Name,
+		SourceLine: test.SourceLine,
+		Expected:   test.Expected,
 	}
 
 	completion, err := r.client.Complete(ctx, model, prompt, test.Input, schema)
