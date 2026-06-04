@@ -138,7 +138,7 @@ litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --mo
 Run Litmus in a GitHub Actions workflow. The action annotates failing tests inline on the test file and writes a results table to the job summary:
 
 ```yaml
-- uses: lukecarr/litmus@v1
+- uses: lukecarr/litmus@v0.3.0
   with:
     tests: example/tests.json
     schema: example/schema.json
@@ -147,7 +147,7 @@ Run Litmus in a GitHub Actions workflow. The action annotates failing tests inli
     api-key: ${{ secrets.OPENROUTER_API_KEY }}
 ```
 
-Each input maps to a `litmus run` flag, and `output` defaults to `github`. The step exits non-zero when any test fails. See the [GitHub Actions guide](https://lukecarr.github.io/litmus/usage/github-actions/) for all inputs and Cloudflare setup.
+Each input maps to a `litmus run` flag, and `output` defaults to `github`. The tag you pin is the Litmus version that runs (`@v0.3.0` runs Litmus v0.3.0; a branch or SHA runs the latest release). The step exits non-zero when any test fails. See the [GitHub Actions guide](https://lukecarr.github.io/litmus/usage/github-actions/) for all inputs and Cloudflare setup.
 
 ## Usage
 

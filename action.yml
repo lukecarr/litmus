@@ -57,9 +57,12 @@ inputs:
     required: false
     default: ""
   version:
-    description: Litmus release to download (e.g. v0.3.0). Defaults to the latest release.
+    description: >-
+      Litmus release to download, e.g. v0.3.0. Defaults to the release matching
+      the action ref you pinned (an exact vX.Y.Z tag), or the latest release when
+      the ref is a branch, SHA, or major-version tag.
     required: false
-    default: latest
+    default: ""
   working-directory:
     description: Directory to run litmus from.
     required: false
@@ -75,6 +78,9 @@ runs:
         # gh authenticates release downloads with the job token.
         GH_TOKEN: ${{ github.token }}
         LITMUS_VERSION: ${{ inputs.version }}
+        # The ref the caller pinned (e.g. v0.3.0, v1, main). Used to pick the
+        # release when version is not set explicitly.
+        LITMUS_ACTION_REF: ${{ github.action_ref }}
         # Inputs are passed through the environment, never interpolated into the
         # script, so a value cannot inject shell. The script maps them to flags.
         INPUT_TESTS: ${{ inputs.tests }}

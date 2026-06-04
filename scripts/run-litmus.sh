@@ -33,12 +33,23 @@ esac
 bin=litmus
 [ "$os" = windows ] && bin=litmus.exe
 
-# Download and unpack the matching archive. An empty tag means the latest
-# release. The version is wildcarded so the pattern keeps working across releases.
+# Resolve which release to download. An explicit version input wins. Otherwise
+# follow the pinned action ref when it is an exact release tag (vX.Y.Z), and fall
+# back to the latest release for branches, SHAs, or moving major tags like v1.
+version="${LITMUS_VERSION:-}"
+if [ -z "$version" ]; then
+  if printf '%s' "${LITMUS_ACTION_REF:-}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+    version="$LITMUS_ACTION_REF"
+  else
+    version=latest
+  fi
+fi
+
+# Download and unpack the matching archive. The version is wildcarded in the
+# pattern, so it keeps matching as releases change.
 workdir="$(mktemp -d)"
-version="${LITMUS_VERSION:-latest}"
 echo "Downloading litmus ($version) for $os/$arch from $repo..."
-if [ "$version" = latest ] || [ -z "$version" ]; then
+if [ "$version" = latest ]; then
   gh release download --repo "$repo" --pattern "litmus_*_${os}_${arch}.tar.gz" --dir "$workdir"
 else
   gh release download "$version" --repo "$repo" --pattern "litmus_*_${os}_${arch}.tar.gz" --dir "$workdir"

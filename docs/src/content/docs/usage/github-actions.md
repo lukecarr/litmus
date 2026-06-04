@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: lukecarr/litmus@v1
+      - uses: lukecarr/litmus@v0.3.0
         with:
           tests: example/tests.json
           schema: example/schema.json
@@ -44,7 +44,7 @@ Each input maps to a `litmus run` flag. `tests`, `schema`, and `model` are requi
 | `cf-account-id` | env | | Cloudflare account ID. |
 | `cf-gateway` | env | | Cloudflare AI Gateway ID. |
 | `cf-token` | env | | Cloudflare AI Gateway token. |
-| `version` | | `latest` | Litmus release to download, e.g. `v0.3.0`. |
+| `version` | | action ref | Litmus release to download. Defaults to the pinned tag, else the latest release. See [Versions](#versions). |
 | `working-directory` | | `.` | Directory to run litmus from. |
 
 ## Credentials
@@ -54,7 +54,7 @@ Pass secrets through the `api-key` and `cf-token` inputs, wired from repository 
 To test several models in one run, list them one per line:
 
 ```yaml
-      - uses: lukecarr/litmus@v1
+      - uses: lukecarr/litmus@v0.3.0
         with:
           tests: tests.json
           schema: schema.json
@@ -68,7 +68,7 @@ To test several models in one run, list them one per line:
 ### Cloudflare AI Gateway
 
 ```yaml
-      - uses: lukecarr/litmus@v1
+      - uses: lukecarr/litmus@v0.3.0
         with:
           tests: tests.json
           schema: schema.json
@@ -81,12 +81,17 @@ To test several models in one run, list them one per line:
           cf-token: ${{ secrets.CF_AIG_TOKEN }}
 ```
 
-## Pinning a version
+## Versions
 
-By default the action downloads the latest Litmus release. Pin a specific release with `version`:
+The action runs the Litmus release that matches the tag you pin, so there is one version to think about:
+
+- `uses: lukecarr/litmus@v0.3.0` downloads and runs Litmus v0.3.0.
+- `uses: lukecarr/litmus@main` (or a branch or commit SHA) runs the latest release.
+
+Pin an exact release tag for reproducible runs. To run a binary different from the pinned ref, set `version` explicitly:
 
 ```yaml
-      - uses: lukecarr/litmus@v1
+      - uses: lukecarr/litmus@main
         with:
           version: v0.3.0
           tests: tests.json
