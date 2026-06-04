@@ -208,6 +208,40 @@ func TestCompleteReturnsErrorOnNon200(t *testing.T) {
 	}
 }
 
+func TestRetryableStatus(t *testing.T) {
+	retryable := []int{500, 502, 503, http.StatusTooManyRequests, http.StatusRequestTimeout}
+	for _, code := range retryable {
+		if !retryableStatus(code) {
+			t.Errorf("retryableStatus(%d) = false, want true", code)
+		}
+	}
+
+	notRetryable := []int{400, 401, 403, 404, 422}
+	for _, code := range notRetryable {
+		if retryableStatus(code) {
+			t.Errorf("retryableStatus(%d) = true, want false", code)
+		}
+	}
+}
+
+func TestCompleteDoesNotRetryClientError(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, "bad request detail")
+	}))
+	defer srv.Close()
+
+	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(3, time.Millisecond))
+	if _, err := c.Complete(context.Background(), "m", "s", "u", json.RawMessage(`{}`)); err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+	if calls != 1 {
+		t.Errorf("server calls = %d, want 1 (client error must not be retried)", calls)
+	}
+}
+
 func TestCompleteNoChoices(t *testing.T) {
 	srv := newServer(t, http.StatusOK, `{"choices":[],"usage":{}}`, nil)
 	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(1, time.Millisecond))

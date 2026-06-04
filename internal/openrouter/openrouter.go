@@ -12,7 +12,7 @@ const baseURL = "https://openrouter.ai/api/v1"
 func New(apiKey string, opts ...provider.Option) provider.Provider {
 	base := []provider.Option{
 		provider.WithBaseURL(baseURL),
-		provider.WithHeader("HTTP-Referer", "https://github.com/litmus-cli/litmus"),
+		provider.WithHeader("HTTP-Referer", "https://github.com/lukecarr/litmus"),
 		provider.WithHeader("X-Title", "Litmus CLI"),
 	}
 	return provider.New(apiKey, append(base, opts...)...)

@@ -28,6 +28,8 @@ Supply credentials in either or both of these ways:
 - `--api-key` (or `CLOUDFLARE_API_KEY`) sets the downstream provider key, sent as the `Authorization` header. This is the key for the model's own provider, for example your OpenAI key.
 - `--cf-token` (or `CF_AIG_TOKEN`) sets the gateway token, sent as the `cf-aig-authorization` header. It is required for authenticated gateways and is sufficient on its own when the gateway stores provider keys for you.
 
+A single `--api-key` is sent as the upstream `Authorization` header on every request, so it only works when all the models you compare share one upstream provider. To compare models from different upstream providers in one run, store the provider keys in the gateway and authenticate with `--cf-token` alone.
+
 ## Flags
 
 | Flag | Short | Description |

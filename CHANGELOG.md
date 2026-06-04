@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Cloudflare AI Gateway provider, selected with `--provider cloudflare`
 
+### Changed
+
+- Failed requests are now retried only on transient responses (5xx, 429, 408)
+
 ## [0.2.0](https://github.com/lukecarr/litmus/releases/tag/v0.2.0) - 2026-01-10
 
 ### Added

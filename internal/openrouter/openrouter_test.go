@@ -35,7 +35,7 @@ func TestNewSetsOpenRouterDefaults(t *testing.T) {
 	if got := header.Get("Authorization"); got != "Bearer router-key" {
 		t.Errorf("Authorization = %q, want Bearer router-key", got)
 	}
-	if got := header.Get("HTTP-Referer"); got != "https://github.com/litmus-cli/litmus" {
+	if got := header.Get("HTTP-Referer"); got != "https://github.com/lukecarr/litmus" {
 		t.Errorf("HTTP-Referer = %q, want the litmus repo URL", got)
 	}
 	if got := header.Get("X-Title"); got != "Litmus CLI" {

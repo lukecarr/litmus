@@ -105,7 +105,7 @@ func runTests(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build the provider from flags and environment.
-	prov, err := buildProvider()
+	prov, err := buildProvider(cmd)
 	if err != nil {
 		return err
 	}
@@ -219,9 +219,10 @@ func runTests(cmd *cobra.Command, args []string) error {
 // buildProvider constructs the LLM provider selected by --provider, resolving
 // credentials from flags or environment variables and validating that the
 // required values are present.
-func buildProvider() (provider.Provider, error) {
+func buildProvider(cmd *cobra.Command) (provider.Provider, error) {
 	switch strings.ToLower(strings.TrimSpace(providerName)) {
 	case "", "openrouter":
+		warnUnusedFlags(cmd, "openrouter", "cf-account-id", "cf-gateway", "cf-token")
 		key := firstNonEmpty(apiKey, os.Getenv("OPENROUTER_API_KEY"))
 		if key == "" {
 			return nil, fmt.Errorf("API key required: use --api-key or set OPENROUTER_API_KEY environment variable")
@@ -248,6 +249,16 @@ func buildProvider() (provider.Provider, error) {
 
 	default:
 		return nil, fmt.Errorf("unknown provider %q (valid: openrouter, cloudflare)", providerName)
+	}
+}
+
+// warnUnusedFlags prints a warning to stderr for each named flag that was set
+// but is ignored by the selected provider.
+func warnUnusedFlags(cmd *cobra.Command, provider string, names ...string) {
+	for _, name := range names {
+		if cmd.Flags().Changed(name) {
+			fmt.Fprintf(os.Stderr, "warning: --%s is ignored with --provider %s\n", name, provider)
+		}
 	}
 }
 

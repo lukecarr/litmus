@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +16,22 @@ const (
 	defaultRetryDelay = time.Second
 	defaultTimeout    = 120 * time.Second
 )
+
+// apiError is returned when the API responds with a non-200 status.
+type apiError struct {
+	statusCode int
+	body       string
+}
+
+func (e *apiError) Error() string {
+	return fmt.Sprintf("API error (status %d): %s", e.statusCode, e.body)
+}
+
+// retryableStatus reports whether an HTTP status code represents a transient
+// failure worth retrying.
+func retryableStatus(code int) bool {
+	return code >= 500 || code == http.StatusTooManyRequests || code == http.StatusRequestTimeout
+}
 
 // Client is a generic OpenAI-compatible chat-completions client. Concrete
 // providers configure it with a base URL and any provider-specific headers.
@@ -200,6 +217,12 @@ func (c *Client) Complete(ctx context.Context, model, systemPrompt, userInput st
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
+
+		// Don't retry terminal client errors.
+		var apiErr *apiError
+		if errors.As(lastErr, &apiErr) && !retryableStatus(apiErr.statusCode) {
+			return nil, lastErr
+		}
 	}
 
 	return nil, fmt.Errorf("failed after %d retries: %w", c.maxRetries, lastErr)
@@ -239,7 +262,7 @@ func (c *Client) doRequest(ctx context.Context, chatReq ChatRequest) (*Completio
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
+		return nil, &apiError{statusCode: resp.StatusCode, body: string(respBody)}
 	}
 
 	var chatResp ChatResponse

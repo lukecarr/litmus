@@ -177,6 +177,8 @@ litmus run \
   --model openai/gpt-4.1-nano
 ```
 
+A single `--api-key` is sent as the upstream `Authorization` header on every request, so it only works when all the models you compare share one upstream provider. To compare models from different upstream providers in one run, store the provider keys in the gateway and authenticate with `--cf-token` alone.
+
 ### Flags
 
 | Flag | Short | Description |
