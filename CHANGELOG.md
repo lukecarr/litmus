@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/lukecarr/litmus/releases/tag/v0.3.0) - 2026-06-04
+
 ### Added
 
-- Cloudflare AI Gateway provider, selected with `--provider cloudflare`
+- `github` output format that emits inline annotations and a job summary for GitHub Actions (#19)
+- GitHub Action for running Litmus in a workflow, with inputs that map to the CLI flags (#20)
+- Cloudflare AI Gateway provider, selected with `--provider cloudflare` (#18)
 
 ### Changed
 
