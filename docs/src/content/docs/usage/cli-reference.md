@@ -40,7 +40,7 @@ A single `--api-key` is sent as the upstream `Authorization` header on every req
 | `--prompt-file` | | Path to file containing system prompt |
 | `--model` | `-m` | Model to test against (required, can be repeated) |
 | `--parallel` | `-P` | Number of parallel requests per model (default: 1) |
-| `--output` | `-o` | Output format: `terminal`, `json`, or `html` (default: `terminal`) |
+| `--output` | `-o` | Output format: `terminal`, `json`, `html`, or `github` (default: `terminal`) |
 | `--provider` | | LLM provider: `openrouter` (default) or `cloudflare` |
 | `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY` |
 | `--cf-account-id` | | Cloudflare account ID (or `CLOUDFLARE_ACCOUNT_ID`), used with `--provider cloudflare` |
@@ -123,6 +123,21 @@ litmus run \
   --model openai/gpt-4.1-nano \
   --output html > report.html
 ```
+
+### GitHub Actions
+
+Emit inline annotations and a job summary when running in a GitHub Actions workflow:
+
+```bash
+litmus run \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model openai/gpt-4.1-nano \
+  --output github
+```
+
+See [Output Formats](/output/formats/) for what the annotations look like.
 
 ## Exit Codes
 

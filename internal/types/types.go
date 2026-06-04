@@ -14,6 +14,9 @@ type TestCase struct {
 	Input string `json:"input"`
 	// Expected output of the test case.
 	Expected json.RawMessage `json:"expected"`
+	// SourceLine is the 1-based line in the test file where this case begins.
+	// It is populated by the loader, not read from the file.
+	SourceLine int `json:"-"`
 }
 
 // FieldDiff represents a difference found in a specific field.
@@ -30,6 +33,8 @@ type FieldDiff struct {
 type TestResult struct {
 	// TestName is the name of the test case.
 	TestName string `json:"test_name"`
+	// SourceLine is the 1-based line in the test file where the test case begins.
+	SourceLine int `json:"source_line,omitempty"`
 	// Passed is true if the test case passed.
 	Passed bool `json:"passed"`
 	// Expected is the expected output of the test case.

@@ -67,6 +67,10 @@ Examples:
   litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt \
     --model openai/gpt-4o --output=json
 
+  # GitHub Actions: inline annotations on the test file + a job summary
+  litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt \
+    --model openai/gpt-4o --output=github
+
   # HTML report
   litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt \
     --model openai/gpt-4o --output=html > report.html
@@ -84,7 +88,7 @@ func init() {
 	runCmd.Flags().StringVar(&promptFile, "prompt-file", "", "Path to file containing system prompt")
 	runCmd.Flags().StringArrayVarP(&models, "model", "m", nil, "Model(s) to test against (required, can be repeated)")
 	runCmd.Flags().IntVarP(&parallel, "parallel", "P", 1, "Number of parallel requests per model")
-	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, json, html")
+	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, json, html, github")
 	runCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON (deprecated: use --output=json)")
 	runCmd.Flags().MarkDeprecated("json", "use --output=json instead")
 	runCmd.Flags().StringVar(&providerName, "provider", "openrouter", "LLM provider: openrouter or cloudflare")
@@ -195,10 +199,12 @@ func runTests(cmd *cobra.Command, args []string) error {
 		rep = reporter.NewJSON(os.Stdout)
 	case "html":
 		rep = reporter.NewHTML(os.Stdout)
+	case "github":
+		rep = reporter.NewGitHub(os.Stdout)
 	case "terminal":
 		rep = reporter.NewTerminal(os.Stdout)
 	default:
-		return fmt.Errorf("unknown output format: %s (valid: terminal, json, html)", outputFormat)
+		return fmt.Errorf("unknown output format: %s (valid: terminal, json, html, github)", outputFormat)
 	}
 
 	if err := rep.Report(report); err != nil {

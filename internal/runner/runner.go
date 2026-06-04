@@ -2,6 +2,7 @@
 package runner
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -34,19 +35,49 @@ func New(p provider.Provider, parallel int) *Runner {
 	}
 }
 
-// LoadTestFile loads test cases from a JSON file.
+// LoadTestFile loads test cases from a JSON file. It decodes the array element
+// by element so each case can record the source line it begins on, which the
+// reporters use to point failures back at the test file.
 func LoadTestFile(path string) ([]types.TestCase, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read test file: %w", err)
 	}
 
+	dec := json.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.Token()
+	if d, ok := tok.(json.Delim); err != nil || !ok || d != '[' {
+		return nil, fmt.Errorf("failed to parse test file: expected a JSON array of test cases")
+	}
+
 	var tests []types.TestCase
-	if err := json.Unmarshal(data, &tests); err != nil {
-		return nil, fmt.Errorf("failed to parse test file: %w", err)
+	for dec.More() {
+		start := dec.InputOffset()
+		var tc types.TestCase
+		if err := dec.Decode(&tc); err != nil {
+			return nil, fmt.Errorf("failed to parse test file: %w", err)
+		}
+		tc.SourceLine = lineAt(data, start)
+		tests = append(tests, tc)
 	}
 
 	return tests, nil
+}
+
+// lineAt returns the 1-based line of the object beginning at or after the byte
+// offset start, skipping the whitespace and commas between array elements.
+func lineAt(data []byte, start int64) int {
+	i := int(start)
+	for i < len(data) && data[i] != '{' {
+		i++
+	}
+	line := 1
+	for j := 0; j < i && j < len(data); j++ {
+		if data[j] == '\n' {
+			line++
+		}
+	}
+	return line
 }
 
 // LoadSchema loads a JSON schema from a file.
@@ -101,8 +132,9 @@ func (r *Runner) Run(ctx context.Context, model, prompt string, schema json.RawM
 // runSingleTest executes a single test case.
 func (r *Runner) runSingleTest(ctx context.Context, model, prompt string, schema json.RawMessage, test types.TestCase) types.TestResult {
 	result := types.TestResult{
-		TestName: test.Name,
-		Expected: test.Expected,
+		TestName:   test.Name,
+		SourceLine: test.SourceLine,
+		Expected:   test.Expected,
 	}
 
 	completion, err := r.client.Complete(ctx, model, prompt, test.Input, schema)

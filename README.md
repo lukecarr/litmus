@@ -189,7 +189,7 @@ A single `--api-key` is sent as the upstream `Authorization` header on every req
 | `--prompt-file` | | Path to file containing system prompt |
 | `--model` | `-m` | Model to test against (required, can be repeated) |
 | `--parallel` | `-P` | Number of parallel requests per model (default: 1) |
-| `--output` | `-o` | Output format: `terminal`, `json`, or `html` (default: `terminal`) |
+| `--output` | `-o` | Output format: `terminal`, `json`, `html`, or `github` (default: `terminal`) |
 | `--provider` | | LLM provider: `openrouter` (default) or `cloudflare` |
 | `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY` |
 | `--cf-account-id` | | Cloudflare account ID (or `CLOUDFLARE_ACCOUNT_ID`), used with `--provider cloudflare` |
@@ -300,11 +300,12 @@ Example schema:
 
 ## Output
 
-Litmus supports three output formats via the `--output` flag:
+Litmus supports four output formats via the `--output` flag:
 
 - `terminal` (default): Colored, formatted output for the terminal
 - `json`: Machine-readable JSON for CI/CD pipelines
 - `html`: Self-contained HTML report for sharing and archiving
+- `github`: GitHub Actions workflow commands with inline annotations and a job summary
 
 ### Terminal Output
 
@@ -361,6 +362,21 @@ litmus run \
 The HTML report includes all the same information as the terminal output, formatted for viewing in a browser. It's self-contained with no external dependencies, making it easy to share or archive.
 
 ![HTML Report Screenshot](https://github.com/user-attachments/assets/0f2ba956-de27-42fa-9e06-42bda13412b0)
+
+### GitHub Actions Output
+
+Use `--output github` inside a GitHub Actions workflow:
+
+```bash
+litmus run \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model openai/gpt-4.1-nano \
+  --output github
+```
+
+Each failed or errored test becomes an inline annotation on the test file, at the line where the test is defined, and Litmus appends a results table to the run's job summary. `litmus run` exits non-zero when any test fails, so the step fails on a regression. See [Output Formats](https://litmus.carr.sh/output/formats/) for details.
 
 ## Exit Codes
 
