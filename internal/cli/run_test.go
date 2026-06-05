@@ -192,6 +192,44 @@ func TestBuildProvider(t *testing.T) {
 		}
 	})
 
+	t.Run("google from flag", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "google"
+		apiKey = "key"
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("gemini alias from GEMINI_API_KEY", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "gemini"
+		t.Setenv("GEMINI_API_KEY", "env-key")
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("google from GOOGLE_API_KEY", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "google"
+		t.Setenv("GEMINI_API_KEY", "")
+		t.Setenv("GOOGLE_API_KEY", "env-key")
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("google missing key", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "google"
+		t.Setenv("GEMINI_API_KEY", "")
+		t.Setenv("GOOGLE_API_KEY", "")
+		if _, err := buildProvider(newCmd()); err == nil {
+			t.Error("expected an error when no API key is supplied")
+		}
+	})
+
 	t.Run("unknown provider", func(t *testing.T) {
 		resetFlags(t)
 		providerName = "nope"
