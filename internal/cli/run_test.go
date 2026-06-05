@@ -165,6 +165,33 @@ func TestBuildProvider(t *testing.T) {
 		})
 	}
 
+	t.Run("openai from flag", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "openai"
+		apiKey = "key"
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("openai from env", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "openai"
+		t.Setenv("OPENAI_API_KEY", "env-key")
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("openai missing key", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "openai"
+		t.Setenv("OPENAI_API_KEY", "")
+		if _, err := buildProvider(newCmd()); err == nil {
+			t.Error("expected an error when no API key is supplied")
+		}
+	})
+
 	t.Run("unknown provider", func(t *testing.T) {
 		resetFlags(t)
 		providerName = "nope"

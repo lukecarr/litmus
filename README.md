@@ -5,7 +5,7 @@
 
 Specification testing for structured LLM outputs.
 
-Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter or Cloudflare AI Gateway, and compare accuracy, latency, and throughput across models.
+Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models through providers like OpenRouter, Cloudflare AI Gateway, and OpenAI, and compare accuracy, latency, and throughput across models.
 
 ## Example output
 
@@ -162,7 +162,7 @@ litmus run --tests <test-file> --schema <schema-file> --prompt <prompt> --model 
 
 ### Providers
 
-Litmus sends requests through one of two providers, selected with `--provider`.
+Litmus sends requests through a provider selected with `--provider`.
 
 #### OpenRouter
 
@@ -172,6 +172,16 @@ The default provider. Set your key with `--api-key` or the `OPENROUTER_API_KEY` 
 export OPENROUTER_API_KEY="your-api-key"
 
 litmus run --tests tests.json --schema schema.json --prompt-file prompt.txt --model openai/gpt-4.1-nano
+```
+
+#### OpenAI
+
+Call the OpenAI API directly with `--provider openai`. Set your key with `--api-key` or the `OPENAI_API_KEY` environment variable. Direct providers use the bare model name, without a `provider/` prefix:
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+
+litmus run --provider openai --tests tests.json --schema schema.json --prompt-file prompt.txt --model gpt-4o
 ```
 
 #### Cloudflare AI Gateway
@@ -209,8 +219,8 @@ A single `--api-key` is sent as the upstream `Authorization` header on every req
 | `--model` | `-m` | Model to test against (required, can be repeated) |
 | `--parallel` | `-P` | Number of parallel requests per model (default: 1) |
 | `--output` | `-o` | Output format: `terminal`, `json`, `html`, or `github` (default: `terminal`) |
-| `--provider` | | LLM provider: `openrouter` (default) or `cloudflare` |
-| `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY` |
+| `--provider` | | LLM provider: `openrouter` (default), `cloudflare`, or `openai` |
+| `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY`. OpenAI: `OPENAI_API_KEY` |
 | `--cf-account-id` | | Cloudflare account ID (or `CLOUDFLARE_ACCOUNT_ID`), used with `--provider cloudflare` |
 | `--cf-gateway` | | Cloudflare AI Gateway ID (or `CLOUDFLARE_GATEWAY_ID`), used with `--provider cloudflare` |
 | `--cf-token` | | Cloudflare AI Gateway token for authenticated gateways (or `CF_AIG_TOKEN`) |
