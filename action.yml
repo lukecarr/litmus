@@ -1,4 +1,4 @@
-name: Litmus Test
+name: Litmus Test Runner
 description: Run Litmus specification tests against LLM models and annotate failures inline.
 author: Luke Carr
 
