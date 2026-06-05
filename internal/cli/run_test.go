@@ -257,6 +257,33 @@ func TestBuildProvider(t *testing.T) {
 		}
 	})
 
+	t.Run("anthropic from flag", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "anthropic"
+		apiKey = "key"
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("claude alias from env", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "claude"
+		t.Setenv("ANTHROPIC_API_KEY", "env-key")
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("anthropic missing key", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "anthropic"
+		t.Setenv("ANTHROPIC_API_KEY", "")
+		if _, err := buildProvider(newCmd()); err == nil {
+			t.Error("expected an error when no API key is supplied")
+		}
+	})
+
 	t.Run("unknown provider", func(t *testing.T) {
 		resetFlags(t)
 		providerName = "nope"

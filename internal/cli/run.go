@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"go.carr.sh/litmus/internal/anthropic"
 	"go.carr.sh/litmus/internal/cloudflare"
 	"go.carr.sh/litmus/internal/google"
 	"go.carr.sh/litmus/internal/openai"
@@ -59,6 +60,8 @@ Providers (--provider):
   openai                 Direct OpenAI API. Uses --api-key or OPENAI_API_KEY.
   google                 Direct Gemini API. Uses --api-key or GEMINI_API_KEY.
   xai                    Direct xAI (Grok) API. Uses --api-key or XAI_API_KEY.
+  anthropic              Direct Anthropic (Claude) API. Uses --api-key or
+                         ANTHROPIC_API_KEY.
 
 The gateway providers (openrouter, cloudflare) name models in {provider}/{model}
 form, e.g. openai/gpt-4o. Direct providers use the bare model name, e.g. gpt-4o.
@@ -104,8 +107,8 @@ func init() {
 	runCmd.Flags().StringVarP(&outputFormat, "output", "o", "terminal", "Output format: terminal, json, html, github")
 	runCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output results as JSON (deprecated: use --output=json)")
 	runCmd.Flags().MarkDeprecated("json", "use --output=json instead")
-	runCmd.Flags().StringVar(&providerName, "provider", "openrouter", "LLM provider: openrouter, cloudflare, openai, google, or xai")
-	runCmd.Flags().StringVar(&apiKey, "api-key", "", "API key (OpenRouter: OPENROUTER_API_KEY; Cloudflare: downstream provider key or CLOUDFLARE_API_KEY; OpenAI: OPENAI_API_KEY; Google: GEMINI_API_KEY; xAI: XAI_API_KEY)")
+	runCmd.Flags().StringVar(&providerName, "provider", "openrouter", "LLM provider: openrouter, cloudflare, openai, google, xai, or anthropic")
+	runCmd.Flags().StringVar(&apiKey, "api-key", "", "API key (OpenRouter: OPENROUTER_API_KEY; Cloudflare: downstream provider key or CLOUDFLARE_API_KEY; OpenAI: OPENAI_API_KEY; Google: GEMINI_API_KEY; xAI: XAI_API_KEY; Anthropic: ANTHROPIC_API_KEY)")
 	runCmd.Flags().StringVar(&cfAccountID, "cf-account-id", "", "Cloudflare account ID (or CLOUDFLARE_ACCOUNT_ID env var)")
 	runCmd.Flags().StringVar(&cfGateway, "cf-gateway", "", "Cloudflare AI Gateway ID (or CLOUDFLARE_GATEWAY_ID env var)")
 	runCmd.Flags().StringVar(&cfToken, "cf-token", "", "Cloudflare AI Gateway token for authenticated gateways (or CF_AIG_TOKEN env var)")
@@ -301,8 +304,16 @@ func buildProvider(cmd *cobra.Command) (provider.Provider, error) {
 		}
 		return xai.New(key), nil
 
+	case "anthropic", "claude":
+		warnUnusedFlags(cmd, "anthropic", "cf-account-id", "cf-gateway", "cf-token")
+		key := firstNonEmpty(apiKey, os.Getenv("ANTHROPIC_API_KEY"))
+		if key == "" {
+			return nil, fmt.Errorf("API key required: use --api-key or set ANTHROPIC_API_KEY environment variable")
+		}
+		return anthropic.New(key), nil
+
 	default:
-		return nil, fmt.Errorf("unknown provider %q (valid: openrouter, cloudflare, openai, google, xai)", providerName)
+		return nil, fmt.Errorf("unknown provider %q (valid: openrouter, cloudflare, openai, google, xai, anthropic)", providerName)
 	}
 }
 

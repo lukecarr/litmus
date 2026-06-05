@@ -31,6 +31,12 @@ Call the Gemini API directly with `--provider google` (alias `gemini`), through 
 
 Call the xAI API directly with `--provider xai` (alias `grok`). Set your key with `--api-key` or the `XAI_API_KEY` environment variable. Models use the bare name, for example `grok-4`.
 
+### Anthropic (Claude)
+
+Call the Anthropic API directly with `--provider anthropic` (alias `claude`). Set your key with `--api-key` or the `ANTHROPIC_API_KEY` environment variable. Models use the bare name, for example `claude-opus-4-8`.
+
+Anthropic uses its native Messages API rather than an OpenAI-compatible endpoint. Litmus enforces your schema by forcing a tool call whose input is the structured response.
+
 ### Cloudflare AI Gateway
 
 Pass `--provider cloudflare` with `--cf-account-id` and `--cf-gateway`. Models use the same `provider/model` names as OpenRouter.
@@ -53,8 +59,8 @@ A single `--api-key` is sent as the upstream `Authorization` header on every req
 | `--model` | `-m` | Model to test against (required, can be repeated) |
 | `--parallel` | `-P` | Number of parallel requests per model (default: 1) |
 | `--output` | `-o` | Output format: `terminal`, `json`, `html`, or `github` (default: `terminal`) |
-| `--provider` | | LLM provider: `openrouter` (default), `cloudflare`, `openai`, `google`, or `xai` |
-| `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY`. OpenAI: `OPENAI_API_KEY`. Google: `GEMINI_API_KEY`. xAI: `XAI_API_KEY` |
+| `--provider` | | LLM provider: `openrouter` (default), `cloudflare`, `openai`, `google`, `xai`, or `anthropic` |
+| `--api-key` | | Provider API key. OpenRouter: `OPENROUTER_API_KEY`. Cloudflare: the downstream provider key, or `CLOUDFLARE_API_KEY`. OpenAI: `OPENAI_API_KEY`. Google: `GEMINI_API_KEY`. xAI: `XAI_API_KEY`. Anthropic: `ANTHROPIC_API_KEY` |
 | `--cf-account-id` | | Cloudflare account ID (or `CLOUDFLARE_ACCOUNT_ID`), used with `--provider cloudflare` |
 | `--cf-gateway` | | Cloudflare AI Gateway ID (or `CLOUDFLARE_GATEWAY_ID`), used with `--provider cloudflare` |
 | `--cf-token` | | Cloudflare AI Gateway token for authenticated gateways (or `CF_AIG_TOKEN`) |
@@ -108,6 +114,19 @@ litmus run \
   --schema schema.json \
   --prompt-file prompt.txt \
   --model grok-4
+```
+
+### Anthropic (Claude)
+
+```bash
+export ANTHROPIC_API_KEY="your-api-key"
+
+litmus run \
+  --provider anthropic \
+  --tests tests.json \
+  --schema schema.json \
+  --prompt-file prompt.txt \
+  --model claude-opus-4-8
 ```
 
 ### Cloudflare AI Gateway
