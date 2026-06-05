@@ -1,5 +1,8 @@
 # Litmus
 
+[![CI](https://github.com/lukecarr/litmus/actions/workflows/ci.yml/badge.svg)](https://github.com/lukecarr/litmus/actions/workflows/ci.yml)
+[![Release](https://github.com/lukecarr/litmus/actions/workflows/release.yml/badge.svg)](https://github.com/lukecarr/litmus/actions/workflows/release.yml)
+
 Specification testing for structured LLM outputs.
 
 Litmus lets you define test cases with input strings and expected JSON outputs, run them against LLM models via OpenRouter or Cloudflare AI Gateway, and compare accuracy, latency, and throughput across models.
