@@ -38,7 +38,33 @@ jobs:
         run: go build ./...
 
       - name: Test
-        run: go test -race ./...
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee test-output.txt
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          if [ ! -f coverage.out ]; then
+            echo "No coverage profile was generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          mod=$(go list -m)
+          total=$(go tool cover -func=coverage.out | awk '/^total:/{print $NF}')
+          {
+            echo "## Test coverage"
+            echo ""
+            echo "**Total: ${total:-n/a}**"
+            echo ""
+            echo "| Package | Coverage |"
+            echo "| --- | --- |"
+            awk -v mod="$mod" '/coverage:/ {
+              pkg = ""; pct = ""
+              for (i = 1; i <= NF; i++) {
+                if (index($i, mod "/") == 1) pkg = substr($i, length(mod) + 2)
+                if ($i == "coverage:") pct = $(i + 1)
+              }
+              if (pkg != "") printf "| %s | %s |\n", pkg, pct
+            }' test-output.txt
+          } >> "$GITHUB_STEP_SUMMARY"
 
   docs:
     name: Docs
