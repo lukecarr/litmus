@@ -2,7 +2,9 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -35,6 +37,10 @@ var (
 	cfGateway    string
 	cfToken      string
 )
+
+// openrouterOpts lets tests point the OpenRouter client at a stub server. It is
+// empty in normal operation, so the production defaults apply unchanged.
+var openrouterOpts []provider.Option
 
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -154,11 +160,7 @@ func runTests(cmd *cobra.Command, args []string) error {
 	// Handle interrupt
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigCh
-		fmt.Fprintln(os.Stderr, "\nInterrupted, cancelling...")
-		cancel()
-	}()
+	go onInterrupt(sigCh, cancel, cmd.ErrOrStderr())
 
 	// Create runner
 	r := runner.New(prov, parallel)
@@ -172,37 +174,20 @@ func runTests(cmd *cobra.Command, args []string) error {
 		Models:    make([]types.ModelRun, 0, len(models)),
 	}
 
-	// Run tests for each model
-	for _, model := range models {
-		model = strings.TrimSpace(model)
-		if model == "" {
-			continue
-		}
-
-		if outputFormat == "terminal" {
-			fmt.Fprintf(os.Stderr, "Running %d tests against %s...\n", len(tests), model)
-		}
-
-		modelRun := r.Run(ctx, model, systemPrompt, schema, tests)
-		report.Models = append(report.Models, *modelRun)
-
-		// Check for context cancellation
-		if ctx.Err() != nil {
-			break
-		}
-	}
+	runModels(ctx, cmd, r, report, systemPrompt, schema, tests)
 
 	// Output results
 	var rep reporter.Reporter
+	out := cmd.OutOrStdout()
 	switch outputFormat {
 	case "json":
-		rep = reporter.NewJSON(os.Stdout)
+		rep = reporter.NewJSON(out)
 	case "html":
-		rep = reporter.NewHTML(os.Stdout)
+		rep = reporter.NewHTML(out)
 	case "github":
-		rep = reporter.NewGitHub(os.Stdout)
+		rep = reporter.NewGitHub(out)
 	case "terminal":
-		rep = reporter.NewTerminal(os.Stdout)
+		rep = reporter.NewTerminal(out)
 	default:
 		return fmt.Errorf("unknown output format: %s (valid: terminal, json, html, github)", outputFormat)
 	}
@@ -222,6 +207,38 @@ func runTests(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// onInterrupt waits for the first signal on sigCh, reports it, and cancels the
+// run. It is split out so the cancellation path is testable without delivering a
+// real OS signal.
+func onInterrupt(sigCh <-chan os.Signal, cancel context.CancelFunc, w io.Writer) {
+	<-sigCh
+	fmt.Fprintln(w, "\nInterrupted, cancelling...")
+	cancel()
+}
+
+// runModels runs the tests against each configured model, appending a ModelRun
+// per model. It skips blank model entries and stops early once ctx is cancelled.
+func runModels(ctx context.Context, cmd *cobra.Command, r *runner.Runner, report *types.RunReport, systemPrompt string, schema json.RawMessage, tests []types.TestCase) {
+	for _, model := range models {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			continue
+		}
+
+		if outputFormat == "terminal" {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Running %d tests against %s...\n", len(tests), model)
+		}
+
+		modelRun := r.Run(ctx, model, systemPrompt, schema, tests)
+		report.Models = append(report.Models, *modelRun)
+
+		// Stop scheduling further models once the run is cancelled.
+		if ctx.Err() != nil {
+			break
+		}
+	}
+}
+
 // buildProvider constructs the LLM provider selected by --provider, resolving
 // credentials from flags or environment variables and validating that the
 // required values are present.
@@ -233,7 +250,7 @@ func buildProvider(cmd *cobra.Command) (provider.Provider, error) {
 		if key == "" {
 			return nil, fmt.Errorf("API key required: use --api-key or set OPENROUTER_API_KEY environment variable")
 		}
-		return openrouter.New(key), nil
+		return openrouter.New(key, openrouterOpts...), nil
 
 	case "cloudflare":
 		cfg := cloudflare.Config{
@@ -263,7 +280,7 @@ func buildProvider(cmd *cobra.Command) (provider.Provider, error) {
 func warnUnusedFlags(cmd *cobra.Command, provider string, names ...string) {
 	for _, name := range names {
 		if cmd.Flags().Changed(name) {
-			fmt.Fprintf(os.Stderr, "warning: --%s is ignored with --provider %s\n", name, provider)
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: --%s is ignored with --provider %s\n", name, provider)
 		}
 	}
 }

@@ -14,6 +14,29 @@ import (
 //go:embed template.html
 var htmlTemplate string
 
+// htmlTmpl is parsed once at startup; an invalid embedded template panics here.
+var htmlTmpl = template.Must(template.New("report").Funcs(template.FuncMap{
+	"json": func(v any) string {
+		b, err := json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			return fmt.Sprintf("error marshaling JSON: %v", err)
+		}
+		return string(b)
+	},
+	"formatDuration": formatDuration,
+	"accuracyClass": func(acc float64) string {
+		if acc >= 90 {
+			return "success"
+		} else if acc >= 70 {
+			return "warning"
+		}
+		return "error"
+	},
+	"add": func(a, b int) int {
+		return a + b
+	},
+}).Parse(htmlTemplate))
+
 // HTML outputs results as a self-contained HTML file.
 type HTML struct {
 	// w is the writer to output the report to.
@@ -35,37 +58,12 @@ type templateData struct {
 
 // Report outputs the complete run report as HTML.
 func (h *HTML) Report(report *types.RunReport) error {
-	tmpl, err := template.New("report").Funcs(template.FuncMap{
-		"json": func(v any) string {
-			b, err := json.MarshalIndent(v, "", "  ")
-			if err != nil {
-				return fmt.Sprintf("error marshaling JSON: %v", err)
-			}
-			return string(b)
-		},
-		"formatDuration": formatDuration,
-		"accuracyClass": func(acc float64) string {
-			if acc >= 90 {
-				return "success"
-			} else if acc >= 70 {
-				return "warning"
-			}
-			return "error"
-		},
-		"add": func(a, b int) int {
-			return a + b
-		},
-	}).Parse(htmlTemplate)
-	if err != nil {
-		return fmt.Errorf("failed to parse HTML template: %w", err)
-	}
-
 	data := templateData{
 		Report:      report,
 		GeneratedAt: time.Now().Format(time.RFC3339),
 	}
 
-	if err := tmpl.Execute(h.w, data); err != nil {
+	if err := htmlTmpl.Execute(h.w, data); err != nil {
 		return fmt.Errorf("failed to execute HTML template: %w", err)
 	}
 

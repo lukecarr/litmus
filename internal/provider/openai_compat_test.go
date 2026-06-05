@@ -242,6 +242,114 @@ func TestCompleteDoesNotRetryClientError(t *testing.T) {
 	}
 }
 
+func TestWithTimeout(t *testing.T) {
+	c := New("k", WithTimeout(5*time.Second))
+	if c.httpClient.Timeout != 5*time.Second {
+		t.Errorf("timeout = %v, want 5s", c.httpClient.Timeout)
+	}
+}
+
+func TestCompleteRetriesExhausted(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "still broken")
+	}))
+	defer srv.Close()
+
+	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(2, time.Millisecond))
+	_, err := c.Complete(context.Background(), "m", "s", "u", json.RawMessage(`{}`))
+	if err == nil {
+		t.Fatal("expected an error after retries are exhausted, got nil")
+	}
+	if calls != 2 {
+		t.Errorf("server calls = %d, want 2 (all retries used)", calls)
+	}
+}
+
+func TestCompleteMalformedBody(t *testing.T) {
+	srv := newServer(t, http.StatusOK, `{not valid json`, nil)
+	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(1, time.Millisecond))
+
+	if _, err := c.Complete(context.Background(), "m", "s", "u", json.RawMessage(`{}`)); err == nil {
+		t.Fatal("expected a decode error for a malformed body, got nil")
+	}
+}
+
+func TestCompleteSchemaMarshalError(t *testing.T) {
+	c := New("k")
+	// An invalid raw schema fails when wrapped into the request payload.
+	if _, err := c.Complete(context.Background(), "m", "s", "u", json.RawMessage(`{invalid`)); err == nil {
+		t.Fatal("expected a schema wrapping error, got nil")
+	}
+}
+
+func TestCompleteContextCancelledBeforeRequest(t *testing.T) {
+	srv := newServer(t, http.StatusOK, okResponse, nil)
+	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(3, time.Millisecond))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := c.Complete(ctx, "m", "s", "u", json.RawMessage(`{}`)); err == nil {
+		t.Fatal("expected a context error, got nil")
+	}
+}
+
+func TestCompleteContextCancelledDuringRetryWait(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError) // always retryable
+	}))
+	defer srv.Close()
+
+	// A long retry delay keeps the second attempt parked in the wait, where the
+	// cancellation lands and aborts the retry loop.
+	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(3, time.Hour))
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(20*time.Millisecond, cancel)
+
+	if _, err := c.Complete(ctx, "m", "s", "u", json.RawMessage(`{}`)); err == nil {
+		t.Fatal("expected a context error, got nil")
+	}
+}
+
+func TestDoRequestMarshalError(t *testing.T) {
+	c := New("k", WithBaseURL("http://example.com"))
+	req := ChatRequest{ResponseFormat: &ResponseFormat{JSONSchema: json.RawMessage(`{invalid`)}}
+	if _, err := c.doRequest(context.Background(), req); err == nil {
+		t.Fatal("expected a marshal error, got nil")
+	}
+}
+
+func TestDoRequestNewRequestError(t *testing.T) {
+	c := New("k", WithBaseURL("http://\x7f")) // control char makes the URL invalid
+	if _, err := c.doRequest(context.Background(), ChatRequest{Model: "m"}); err == nil {
+		t.Fatal("expected a request-construction error, got nil")
+	}
+}
+
+// errReadTransport returns a response whose body errors on read.
+type errReadTransport struct{}
+
+func (errReadTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(errReader{}),
+		Header:     make(http.Header),
+	}, nil
+}
+
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
+
+func TestDoRequestBodyReadError(t *testing.T) {
+	c := New("k", WithBaseURL("http://example.com"), WithHTTPClient(&http.Client{Transport: errReadTransport{}}))
+	if _, err := c.doRequest(context.Background(), ChatRequest{Model: "m"}); err == nil {
+		t.Fatal("expected a body-read error, got nil")
+	}
+}
+
 func TestCompleteNoChoices(t *testing.T) {
 	srv := newServer(t, http.StatusOK, `{"choices":[],"usage":{}}`, nil)
 	c := New("k", WithBaseURL(srv.URL), WithHTTPClient(srv.Client()), WithRetry(1, time.Millisecond))

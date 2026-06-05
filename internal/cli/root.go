@@ -4,6 +4,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -24,14 +25,22 @@ It allows you to:
 
 // Execute runs the root command.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		// ErrTestsFailed means tests ran but some failed - results already printed
+	os.Exit(execute(rootCmd, os.Args[1:], os.Stderr))
+}
+
+// execute runs cmd with the given args and returns the process exit code,
+// printing any non-test error to stderr.
+func execute(cmd *cobra.Command, args []string, stderr io.Writer) int {
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
+		// ErrTestsFailed means tests ran but some failed - results already printed.
 		if errors.Is(err, ErrTestsFailed) {
-			os.Exit(1)
+			return 1
 		}
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(stderr, err)
+		return 1
 	}
+	return 0
 }
 
 var versionCmd = &cobra.Command{

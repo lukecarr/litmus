@@ -90,6 +90,11 @@ func writeJobSummary(report *types.RunReport) error {
 	}
 	defer f.Close()
 
+	return writeSummaryTable(f, report)
+}
+
+// writeSummaryTable renders the Markdown results table to w.
+func writeSummaryTable(w io.Writer, report *types.RunReport) error {
 	var b strings.Builder
 	b.WriteString("## Litmus results\n\n")
 	b.WriteString("| Model | Passed | Failed | Errors | Accuracy |\n")
@@ -101,7 +106,7 @@ func writeJobSummary(report *types.RunReport) error {
 	}
 	b.WriteString("\n")
 
-	if _, err := io.WriteString(f, b.String()); err != nil {
+	if _, err := io.WriteString(w, b.String()); err != nil {
 		return fmt.Errorf("failed to write GITHUB_STEP_SUMMARY: %w", err)
 	}
 	return nil

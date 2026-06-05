@@ -14,25 +14,33 @@ var (
 )
 
 func init() {
-	// If ldflags weren't set (e.g., when using `go install module@version`),
-	// try to get version info from the embedded build info.
-	if Version == "dev" {
-		if info, ok := debug.ReadBuildInfo(); ok {
-			// When installed via `go install module@version`, the Main.Version
-			// will be the version (e.g., "v1.0.0" or "v1.0.0-0.20210101000000-abcdef123456").
-			if info.Main.Version != "" && info.Main.Version != "(devel)" {
-				Version = info.Main.Version
-			}
+	info, ok := debug.ReadBuildInfo()
+	Version, Commit = resolve(Version, Commit, info, ok)
+}
 
-			// Try to get the VCS revision from build settings.
-			for _, setting := range info.Settings {
-				if setting.Key == "vcs.revision" && Commit == "unknown" {
-					Commit = setting.Value
-					break
-				}
-			}
+// resolve derives version and commit from embedded build info when ldflags
+// weren't set (e.g., when using `go install module@version`). Values already
+// provided via ldflags are left untouched.
+func resolve(version, commit string, info *debug.BuildInfo, ok bool) (string, string) {
+	if version != "dev" || !ok {
+		return version, commit
+	}
+
+	// When installed via `go install module@version`, Main.Version holds the
+	// version (e.g., "v1.0.0" or "v1.0.0-0.20210101000000-abcdef123456").
+	if info.Main.Version != "" && info.Main.Version != "(devel)" {
+		version = info.Main.Version
+	}
+
+	// Try to get the VCS revision from build settings.
+	for _, setting := range info.Settings {
+		if setting.Key == "vcs.revision" && commit == "unknown" {
+			commit = setting.Value
+			break
 		}
 	}
+
+	return version, commit
 }
 
 // String returns a formatted version string.
