@@ -230,6 +230,33 @@ func TestBuildProvider(t *testing.T) {
 		}
 	})
 
+	t.Run("xai from flag", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "xai"
+		apiKey = "key"
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("grok alias from env", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "grok"
+		t.Setenv("XAI_API_KEY", "env-key")
+		if _, err := buildProvider(newCmd()); err != nil {
+			t.Errorf("buildProvider returned error: %v", err)
+		}
+	})
+
+	t.Run("xai missing key", func(t *testing.T) {
+		resetFlags(t)
+		providerName = "xai"
+		t.Setenv("XAI_API_KEY", "")
+		if _, err := buildProvider(newCmd()); err == nil {
+			t.Error("expected an error when no API key is supplied")
+		}
+	})
+
 	t.Run("unknown provider", func(t *testing.T) {
 		resetFlags(t)
 		providerName = "nope"
