@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/lukecarr/litmus/releases/tag/v0.3.3) - 2026-06-05
+
+### Changed
+
+- GitHub Action display name is now "Litmus Test Runner" so it can be published to the Marketplace ("Litmus" and "Litmus Test" both matched existing GitHub accounts) (#26)
+
 ## [0.3.2](https://github.com/lukecarr/litmus/releases/tag/v0.3.2) - 2026-06-04
 
 ### Changed
