@@ -28,6 +28,7 @@ go.work
 
 /litmus
 test-output.txt
+coverage-pkg.txt
 **/*.html
 !/internal/reporter/template.html
 

@@ -37,8 +37,11 @@ jobs:
       - name: Build
         run: go build ./...
 
+      # Merges unit-test coverage with one run of the built binary so main() and
+      # the os.Exit shim in cli.Execute() are counted. Writes coverage.out and
+      # coverage-pkg.txt.
       - name: Test
-        run: go test -race -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee test-output.txt
+        run: ./scripts/coverage.sh
 
       - name: Coverage summary
         if: always()
@@ -63,7 +66,7 @@ jobs:
                 if ($i == "coverage:") pct = $(i + 1)
               }
               if (pkg != "") printf "| %s | %s |\n", pkg, pct
-            }' test-output.txt
+            }' coverage-pkg.txt
           } >> "$GITHUB_STEP_SUMMARY"
 
   docs:
